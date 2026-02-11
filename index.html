@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Video Editor Pro</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="/_sdk/element_sdk.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      box-sizing: border-box;
+    }
+    * {
+      font-family: 'Space Grotesk', sans-serif;
+    }
+    .gradient-bg {
+      background: linear-gradient(135deg, #0f0f23 0%, #1a1a3e 50%, #0d0d1a 100%);
+    }
+    .glass-card {
+      background: rgba(255, 255, 255, 0.03);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .neon-border {
+      box-shadow: 0 0 20px rgba(99, 102, 241, 0.3), inset 0 0 20px rgba(99, 102, 241, 0.05);
+    }
+    .timeline-track {
+      background: linear-gradient(90deg, #4f46e5 0%, #7c3aed 50%, #4f46e5 100%);
+    }
+    .handle {
+      cursor: ew-resize;
+      touch-action: none;
+    }
+    .pulse-glow {
+      animation: pulseGlow 2s ease-in-out infinite;
+    }
+    @keyframes pulseGlow {
+      0%, 100% { box-shadow: 0 0 20px rgba(99, 102, 241, 0.4); }
+      50% { box-shadow: 0 0 40px rgba(99, 102, 241, 0.8); }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .fade-in {
+      animation: fadeIn 0.3s ease-out forwards;
+    }
+    .tag-pill {
+      transition: all 0.2s ease;
+    }
+    .tag-pill:hover {
+      transform: scale(1.05);
+    }
+    input[type="range"] {
+      -webkit-appearance: none;
+      background: transparent;
+    }
+    input[type="range"]::-webkit-slider-track {
+      height: 6px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 3px;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 18px;
+      height: 18px;
+      background: #6366f1;
+      border-radius: 50%;
+      cursor: pointer;
+      margin-top: -6px;
+    }
+    .youtube-connected {
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(220, 38, 38, 0.1));
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+    .youtube-disconnected {
+      background: rgba(55, 65, 81, 0.5);
+      border: 1px solid rgba(75, 85, 99, 0.3);
+    }
+  </style>
+</head>
+<body class="h-full m-0 p-0 gradient-bg text-white overflow-auto">
+  <div id="app-container" class="min-h-full w-full p-4 md:p-8">
+    <!-- Header -->
+    <header class="text-center mb-8">
+      <h1 id="app-title" class="text-3xl md:text-4xl font-bold bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent mb-2">Video Editor Pro</h1>
+      <p id="app-tagline" class="text-gray-400 text-sm md:text-base">Trim, caption & optimize your videos for social media</p>
+    </header>
+
+    <div class="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- Main Editor Panel -->
+      <div class="lg:col-span-2 space-y-6">
+        <!-- Video Upload / Preview -->
+        <div class="glass-card rounded-2xl p-6 neon-border">
+          <div id="upload-area" class="relative">
+            <div id="drop-zone" class="border-2 border-dashed border-indigo-500/50 rounded-xl p-8 text-center cursor-pointer hover:border-indigo-400 transition-all duration-300">
+              <input type="file" id="video-input" accept="video/*" class="hidden" aria-label="Upload video file">
+              <div class="space-y-4">
+                <div class="w-20 h-20 mx-auto bg-indigo-500/20 rounded-full flex items-center justify-center pulse-glow">
+                  <svg class="w-10 h-10 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                  </svg>
+                </div>
+                <div>
+                  <p class="text-lg font-medium text-white">Drop your video here</p>
+                  <p class="text-sm text-gray-400 mt-1">or click to browse</p>
+                </div>
+                <p class="text-xs text-gray-500">Supports MP4, MOV, AVI, WebM, MKV</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Video Preview -->
+          <div id="video-preview" class="hidden">
+            <div class="relative rounded-xl overflow-hidden bg-black aspect-video">
+              <video id="video-player" class="w-full h-full object-contain" controls>
+                Your browser does not support video playback.
+              </video>
+            </div>
+            <div class="mt-4 flex items-center justify-between">
+              <button id="change-video-btn" class="text-sm text-gray-400 hover:text-white transition-colors flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                </svg>
+                Change Video
+              </button>
+              <span id="video-info" class="text-sm text-gray-400"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Trim Controls -->
+        <div id="trim-section" class="glass-card rounded-2xl p-6 hidden">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-semibold flex items-center gap-2">
+              <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879M12 12L9.121 9.121m0 5.758a3 3 0 10-4.243-4.243 3 3 0 004.243 4.243z"/>
+              </svg>
+              Trim Video
+            </h2>
+            <span id="trim-duration" class="text-sm text-indigo-400 font-medium"></span>
+          </div>
+
+          <!-- Timeline -->
+          <div class="relative mb-6">
+            <div class="h-16 bg-gray-800/50 rounded-lg overflow-hidden relative">
+              <div id="timeline-preview" class="absolute inset-0 flex">
+                <!-- Thumbnails will be generated here -->
+              </div>
+              <div id="trim-overlay" class="absolute inset-y-0 bg-indigo-500/30 border-2 border-indigo-400 rounded" style="left: 0%; right: 0%;">
+                <div id="start-handle" class="handle absolute left-0 top-0 bottom-0 w-4 bg-indigo-500 rounded-l flex items-center justify-center">
+                  <div class="w-0.5 h-8 bg-white/50 rounded"></div>
+                </div>
+                <div id="end-handle" class="handle absolute right-0 top-0 bottom-0 w-4 bg-indigo-500 rounded-r flex items-center justify-center">
+                  <div class="w-0.5 h-8 bg-white/50 rounded"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Time Inputs -->
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label for="start-time" class="block text-sm text-gray-400 mb-2">Start Time</label>
+              <input type="text" id="start-time" value="00:00" class="w-full bg-gray-800/50 border border-gray-700 rounded-lg px-4 py-2 text-white focus:border-indigo-500 focus:outline-none" aria-label="Start time">
+            </div>
+            <div>
+              <label for="end-time" class="block text-sm text-gray-400 mb-2">End Time</label>
+              <input type="text" id="end-time" value="00:00" class="w-full bg-gray-800/50 border border-gray-700 rounded-lg px-4 py-2 text-white focus:border-indigo-500 focus:outline-none" aria-label="End time">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sidebar - AI Features -->
+      <div class="space-y-6">
+        <!-- YouTube Connect Section -->
+        <div id="youtube-section" class="glass-card rounded-2xl p-6 youtube-disconnected">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-semibold flex items-center gap-2">
+              <svg class="w-5 h-5 text-red-400" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+              </svg>
+              YouTube Upload
+            </h2>
+            <div id="youtube-status" class="w-3 h-3 rounded-full bg-gray-600"></div>
+          </div>
+
+          <div id="youtube-disconnected-state" class="space-y-4">
+            <p class="text-sm text-gray-300">Connect your YouTube account to auto-upload videos directly from the editor.</p>
+            <button id="connect-youtube-btn" class="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-medium py-3 px-4 rounded-xl transition-all duration-300 flex items-center justify-center gap-2">
+              <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+              </svg>
+              Connect YouTube
+            </button>
+          </div>
+
+          <div id="youtube-connected-state" class="hidden space-y-4">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <div class="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center">
+                  <svg class="w-6 h-6 text-red-400" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                  </svg>
+                </div>
+                <div>
+                  <p class="text-sm font-medium" id="youtube-channel-name">Channel Connected</p>
+                  <p class="text-xs text-gray-400">Ready to upload</p>
+                </div>
+              </div>
+              <button id="disconnect-youtube-btn" class="text-xs text-red-400 hover:text-red-300 transition-colors">Disconnect</button>
+            </div>
+
+            <div class="space-y-3 pt-4 border-t border-gray-700">
+              <div>
+                <label for="youtube-title" class="block text-xs text-gray-400 mb-2">Video Title</label>
+                <input type="text" id="youtube-title" placeholder="Enter video title" maxlength="100" class="w-full bg-gray-800/50 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:border-red-500 focus:outline-none" aria-label="YouTube video title">
+                <p class="text-xs text-gray-500 mt-1"><span id="title-count">0</span>/100</p>
+              </div>
+
+              <div>
+                <label for="youtube-description" class="block text-xs text-gray-400 mb-2">Description</label>
+                <textarea id="youtube-description" placeholder="Enter video description" maxlength="5000" rows="3" class="w-full bg-gray-800/50 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:border-red-500 focus:outline-none resize-none" aria-label="YouTube video description"></textarea>
+                <p class="text-xs text-gray-500 mt-1"><span id="desc-count">0</span>/5000</p>
+              </div>
+
+              <div>
+                <label for="youtube-visibility" class="block text-xs text-gray-400 mb-2">Visibility</label>
+                <select id="youtube-visibility" class="w-full bg-gray-800/50 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:border-red-500 focus:outline-none">
+                  <option value="private">🔒 Private</option>
+                  <option value="unlisted">🔗 Unlisted</option>
+                  <option value="public">🌍 Public</option>
+                </select>
+              </div>
+
+              <div id="auto-tags-container" class="pt-2 border-t border-gray-700">
+                <p class="text-xs text-gray-400 mb-2">Auto-Tags from AI</p>
+                <div id="youtube-auto-tags" class="flex flex-wrap gap-2">
+                  <!-- Tags will be inserted here -->
+                </div>
+              </div>
+            </div>
+
+            <button id="upload-to-youtube-btn" class="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-medium py-3 px-4 rounded-xl transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+              </svg>
+              Upload to YouTube
+            </button>
+
+            <div id="upload-progress" class="hidden">
+              <p class="text-xs text-gray-400 mb-2">Uploading...</p>
+              <div class="w-full bg-gray-800/50 rounded-full h-2 overflow-hidden">
+                <div id="progress-bar" class="bg-gradient-to-r from-red-500 to-red-600 h-full transition-all duration-300" style="width: 0%"></div>
+              </div>
+              <p id="upload-status" class="text-xs text-gray-400 mt-2 text-center">0%</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- AI Caption Generator -->
+        <div class="glass-card rounded-2xl p-6">
+          <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
+            <svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+            </svg>
+            AI Captions
+          </h2>
+          
+          <div id="caption-empty" class="text-center py-6 text-gray-400">
+            <p class="text-sm">Upload a video to generate captions</p>
+          </div>
+
+          <div id="caption-content" class="hidden space-y-4">
+            <button id="generate-captions-btn" class="w-full bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white font-medium py-3 px-4 rounded-xl transition-all duration-300 flex items-center justify-center gap-2">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+              </svg>
+              Generate Captions
+            </button>
+            
+            <div id="captions-loading" class="hidden text-center py-4">
+              <div class="inline-block w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
+              <p class="text-sm text-gray-400 mt-2">AI is analyzing your video...</p>
+            </div>
+
+            <div id="captions-result" class="hidden">
+              <textarea id="caption-text" rows="4" class="w-full bg-gray-800/50 border border-gray-700 rounded-lg px-4 py-3 text-white text-sm focus:border-purple-500 focus:outline-none resize-none" placeholder="Generated caption will appear here..." aria-label="Generated caption"></textarea>
+              <button id="copy-caption-btn" class="mt-2 text-sm text-purple-400 hover:text-purple-300 flex items-center gap-1">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/>
+                </svg>
+                Copy Caption
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- AI Tags Generator -->
+        <div class="glass-card rounded-2xl p-6">
+          <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
+            <svg class="w-5 h-5 text-pink-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
+            </svg>
+            AI Tags
+          </h2>
+
+          <!-- Platform Tabs -->
+          <div class="flex gap-2 mb-4">
+            <button id="youtube-tab" class="flex-1 py-2 px-3 rounded-lg bg-red-500/20 text-red-400 border border-red-500/30 text-sm font-medium transition-all" data-platform="youtube">
+              📺 YouTube
+            </button>
+            <button id="instagram-tab" class="flex-1 py-2 px-3 rounded-lg bg-gray-800/50 text-gray-400 border border-transparent text-sm font-medium transition-all hover:bg-gray-700/50" data-platform="instagram">
+              📸 Instagram
+            </button>
+          </div>
+
+          <div id="tags-empty" class="text-center py-6 text-gray-400">
+            <p class="text-sm">Upload a video to generate tags</p>
+          </div>
+
+          <div id="tags-content" class="hidden space-y-4">
+            <button id="generate-tags-btn" class="w-full bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white font-medium py-3 px-4 rounded-xl transition-all duration-300 flex items-center justify-center gap-2">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+              </svg>
+              Generate Tags
+            </button>
+
+            <div id="tags-loading" class="hidden text-center py-4">
+              <div class="inline-block w-8 h-8 border-2 border-pink-500 border-t-transparent rounded-full animate-spin"></div>
+              <p class="text-sm text-gray-400 mt-2">AI is generating optimized tags...</p>
+            </div>
+
+            <div id="tags-result" class="hidden">
+              <div id="tags-container" class="flex flex-wrap gap-2 mb-3">
+                <!-- Tags will be inserted here -->
+              </div>
+              <button id="copy-tags-btn" class="text-sm text-pink-400 hover:text-pink-300 flex items-center gap-1">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/>
+                </svg>
+                Copy All Tags
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Export Section -->
+        <div id="export-section" class="glass-card rounded-2xl p-6 hidden">
+          <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
+            <svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+            </svg>
+            Export
+          </h2>
+          
+          <div class="space-y-3">
+            <button id="export-trimmed-btn" class="w-full bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-medium py-3 px-4 rounded-xl transition-all duration-300">
+              Export Trimmed Video
+            </button>
+            <p class="text-xs text-gray-500 text-center">Note: Full video export requires server processing</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-4 right-4 bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 shadow-xl transform translate-y-20 opacity-0 transition-all duration-300 flex items-center gap-3 z-50">
+      <svg id="toast-icon" class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+      </svg>
+      <span id="toast-message" class="text-sm text-white"></span>
+    </div>
+
+    <!-- YouTube Auth Modal -->
+    <div id="youtube-auth-modal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div class="glass-card rounded-2xl p-8 max-w-md w-full">
+        <div class="text-center mb-6">
+          <div class="w-16 h-16 mx-auto bg-red-500/20 rounded-full flex items-center justify-center mb-4">
+            <svg class="w-8 h-8 text-red-400" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+            </svg>
+          </div>
+          <h3 class="text-xl font-semibold mb-2">Connect YouTube</h3>
+          <p class="text-sm text-gray-400">Authenticate with your Google account to enable direct YouTube uploads</p>
+        </div>
+
+        <div class="space-y-3">
+          <button id="authorize-youtube-btn" class="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-medium py-3 px-4 rounded-xl transition-all duration-300 flex items-center justify-center gap-2">
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+            </svg>
+            Authorize with Google
+          </button>
+          <button id="close-auth-modal" class="w-full bg-gray-700 hover:bg-gray-600 text-white font-medium py-3 px-4 rounded-xl transition-all duration-300">
+            Later
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Default configuration
+    const defaultConfig = {
+      app_title: 'Video Editor Pro',
+      tagline: 'Trim, caption & optimize your videos for social media',
+      background_color: '#0f0f23',
+      surface_color: '#1a1a3e',
+      text_color: '#ffffff',
+      primary_action_color: '#6366f1',
+      secondary_action_color: '#a855f7'
+    };
+
+    let config = { ...defaultConfig };
+
+    // State
+    let videoFile = null;
+    let videoDuration = 0;
+    let trimStart = 0;
+    let trimEnd = 0;
+    let currentPlatform = 'youtube';
+    let generatedTags = [];
+    let youtubeConnected = false;
+    let youtubeAuthToken = null;
+
+    // Sample AI-generated content
+    const sampleCaptions = {
+      general: [
+        "✨ Creating something amazing today! Watch till the end for a surprise 🎬 #content #creative",
+        "🎥 Behind the scenes magic happening right here! What do you think? 💫",
+        "📱 This is exactly what you needed to see today! Save this for later 🔥",
+        "💡 Let me show you something incredible... Trust the process! ⭐",
+        "🚀 New content alert! Double tap if you're excited about this 🙌"
+      ]
+    };
+
+    const sampleTags = {
+      youtube: [
+        '#youtube', '#viral', '#trending', '#newvideo', '#subscribe',
+        '#youtuber', '#video', '#content', '#creator', '#vlog',
+        '#entertainment', '#mustwatch', '#recommended', '#fyp', '#explore'
+      ],
+      instagram: [
+        '#instagram', '#instagood', '#reels', '#explore', '#viral',
+        '#trending', '#reelsinstagram', '#instadaily', '#igdaily', '#content',
+        '#creator', '#viralreels', '#explorepage', '#fyp', '#instavideo'
+      ]
+    };
+
+    // DOM Elements
+    const dropZone = document.getElementById('drop-zone');
+    const videoInput = document.getElementById('video-input');
+    const uploadArea = document.getElementById('upload-area');
+    const videoPreview = document.getElementById('video-preview');
+    const videoPlayer = document.getElementById('video-player');
+    const videoInfo = document.getElementById('video-info');
+    const changeVideoBtn = document.getElementById('change-video-btn');
+    const trimSection = document.getElementById('trim-section');
+    const trimOverlay = document.getElementById('trim-overlay');
+    const startHandle = document.getElementById('start-handle');
+    const endHandle = document.getElementById('end-handle');
+    const startTimeInput = document.getElementById('start-time');
+    const endTimeInput = document.getElementById('end-time');
+    const trimDuration = document.getElementById('trim-duration');
+    const captionEmpty = document.getElementById('caption-empty');
+    const captionContent = document.getElementById('caption-content');
+    const generateCaptionsBtn = document.getElementById('generate-captions-btn');
+    const captionsLoading = document.getElementById('captions-loading');
+    const captionsResult = document.getElementById('captions-result');
+    const captionText = document.getElementById('caption-text');
+    const copyCaptionBtn = document.getElementById('copy-caption-btn');
+    const tagsEmpty = document.getElementById('tags-empty');
+    const tagsContent = document.getElementById('tags-content');
+    const generateTagsBtn = document.getElementById('generate-tags-btn');
+    const tagsLoading = document.getElementById('tags-loading');
+    const tagsResult = document.getElementById('tags-result');
+    const tagsContainer = document.getElementById('tags-container');
+    const copyTagsBtn = document.getElementById('copy-tags-btn');
+    const youtubeTab = document.getElementById('youtube-tab');
+    const instagramTab = document.getElementById('instagram-tab');
+    const exportSection = document.getElementById('export-section');
+    const exportTrimmedBtn = document.getElementById('export-trimmed-btn');
+    const toast = document.getElementById('toast');
+    const toastMessage = document.getElementById('toast-message');
+
+    // YouTube Elements
+    const youtubeSection = document.getElementById('youtube-section');
+    const youtubeStatus = document.getElementById('youtube-status');
+    const connectYoutubeBtn = document.getElementById('connect-youtube-btn');
+    const disconnectYoutubeBtn = document.getElementById('disconnect-youtube-btn');
+    const youtubeDisconnectedState = document.getElementById('youtube-disconnected-state');
+    const youtubeConnectedState = document.getElementById('youtube-connected-state');
+    const uploadToYoutubeBtn = document.getElementById('upload-to-youtube-btn');
+    const youtubeTitle = document.getElementById('youtube-title');
+    const youtubeDescription = document.getElementById('youtube-description');
+    const youtubeVisibility = document.getElementById('youtube-visibility');
+    const youtubeAutoTags = document.getElementById('youtube-auto-tags');
+    const uploadProgress = document.getElementById('upload-progress');
+    const progressBar = document.getElementById('progress-bar');
+    const uploadStatus = document.getElementById('upload-status');
+    const youtubeAuthModal = document.getElementById('youtube-auth-modal');
+    const authorizeYoutubeBtn = document.getElementById('authorize-youtube-btn');
+    const closeAuthModalBtn = document.getElementById('close-auth-modal');
+
+    // Initialize Element SDK
+    if (window.elementSdk) {
+      window.elementSdk.init({
+        defaultConfig,
+        onConfigChange: async (newConfig) => {
+          config = { ...defaultConfig, ...newConfig };
+          applyConfig();
+        },
+        mapToCapabilities: (cfg) => ({
+          recolorables: [
+            {
+              get: () => cfg.background_color || defaultConfig.background_color,
+              set: (v) => { cfg.background_color = v; window.elementSdk.setConfig({ background_color: v }); }
+            },
+            {
+              get: () => cfg.surface_color || defaultConfig.surface_color,
+              set: (v) => { cfg.surface_color = v; window.elementSdk.setConfig({ surface_color: v }); }
+            },
+            {
+              get: () => cfg.text_color || defaultConfig.text_color,
+              set: (v) => { cfg.text_color = v; window.elementSdk.setConfig({ text_color: v }); }
+            },
+            {
+              get: () => cfg.primary_action_color || defaultConfig.primary_action_color,
+              set: (v) => { cfg.primary_action_color = v; window.elementSdk.setConfig({ primary_action_color: v }); }
+            },
+            {
+              get: () => cfg.secondary_action_color || defaultConfig.secondary_action_color,
+              set: (v) => { cfg.secondary_action_color = v; window.elementSdk.setConfig({ secondary_action_color: v }); }
+            }
+          ],
+          borderables: [],
+          fontEditable: undefined,
+          fontSizeable: undefined
+        }),
+        mapToEditPanelValues: (cfg) => new Map([
+          ['app_title', cfg.app_title || defaultConfig.app_title],
+          ['tagline', cfg.tagline || defaultConfig.tagline]
+        ])
+      });
+    }
+
+    function applyConfig() {
+      document.getElementById('app-title').textContent = config.app_title || defaultConfig.app_title;
+      document.getElementById('app-tagline').textContent = config.tagline || defaultConfig.tagline;
+      
+      const bgColor = config.background_color || defaultConfig.background_color;
+      const surfaceColor = config.surface_color || defaultConfig.surface_color;
+      const textColor = config.text_color || defaultConfig.text_color;
+      const primaryColor = config.primary_action_color || defaultConfig.primary_action_color;
+      const secondaryColor = config.secondary_action_color || defaultConfig.secondary_action_color;
+      
+      document.body.style.background = `linear-gradient(135deg, ${bgColor} 0%, ${surfaceColor} 50%, ${bgColor} 100%)`;
+      document.body.style.color = textColor;
+      
+      // Update button colors
+      generateCaptionsBtn.style.background = `linear-gradient(to right, ${secondaryColor}, ${primaryColor})`;
+      generateTagsBtn.style.background = `linear-gradient(to right, ${secondaryColor}, #f43f5e)`;
+      exportTrimmedBtn.style.background = `linear-gradient(to right, #22c55e, #10b981)`;
+    }
+
+    // Utility Functions
+    function formatTime(seconds) {
+      const mins = Math.floor(seconds / 60);
+      const secs = Math.floor(seconds % 60);
+      return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+
+    function parseTime(timeStr) {
+      const parts = timeStr.split(':');
+      if (parts.length === 2) {
+        return parseInt(parts[0]) * 60 + parseInt(parts[1]);
+      }
+      return 0;
+    }
+
+    function showToast(message, type = 'success') {
+      const toastIcon = document.getElementById('toast-icon');
+      toastMessage.textContent = message;
+      
+      if (type === 'success') {
+        toastIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>';
+        toastIcon.className = 'w-5 h-5 text-green-400';
+      } else {
+        toastIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>';
+        toastIcon.className = 'w-5 h-5 text-yellow-400';
+      }
+      
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      setTimeout(() => {
+        toast.classList.add('translate-y-20', 'opacity-0');
+      }, 3000);
+    }
+
+    function formatFileSize(bytes) {
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+      return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    }
+
+    // YouTube Connection
+    connectYoutubeBtn.addEventListener('click', () => {
+      youtubeAuthModal.classList.remove('hidden');
+    });
+
+    closeAuthModalBtn.addEventListener('click', () => {
+      youtubeAuthModal.classList.add('hidden');
+    });
+
+    authorizeYoutubeBtn.addEventListener('click', () => {
+      // Simulate YouTube OAuth flow
+      youtubeConnected = true;
+      youtubeAuthToken = 'mock_token_' + Date.now();
+      youtubeAuthModal.classList.add('hidden');
+      updateYoutubeUI();
+      showToast('YouTube account connected!');
+    });
+
+    disconnectYoutubeBtn.addEventListener('click', () => {
+      youtubeConnected = false;
+      youtubeAuthToken = null;
+      updateYoutubeUI();
+      showToast('YouTube account disconnected');
+    });
+
+    function updateYoutubeUI() {
+      if (youtubeConnected) {
+        youtubeStatus.classList.remove('bg-gray-600');
+        youtubeStatus.classList.add('bg-green-500', 'animate-pulse');
+        youtubeSection.classList.remove('youtube-disconnected');
+        youtubeSection.classList.add('youtube-connected');
+        youtubeDisconnectedState.classList.add('hidden');
+        youtubeConnectedState.classList.remove('hidden');
+      } else {
+        youtubeStatus.classList.remove('bg-green-500', 'animate-pulse');
+        youtubeStatus.classList.add('bg-gray-600');
+        youtubeSection.classList.remove('youtube-connected');
+        youtubeSection.classList.add('youtube-disconnected');
+        youtubeDisconnectedState.classList.remove('hidden');
+        youtubeConnectedState.classList.add('hidden');
+      }
+    }
+
+    // YouTube Title/Description Tracking
+    youtubeTitle.addEventListener('input', (e) => {
+      const count = e.target.value.length;
+      document.getElementById('title-count').textContent = count;
+    });
+
+    youtubeDescription.addEventListener('input', (e) => {
+      const count = e.target.value.length;
+      document.getElementById('desc-count').textContent = count;
+    });
+
+    // Upload to YouTube
+    uploadToYoutubeBtn.addEventListener('click', async () => {
+      if (!videoFile) {
+        showToast('Please select a video first', 'warning');
+        return;
+      }
+
+      if (!youtubeTitle.value.trim()) {
+        showToast('Please enter a video title', 'warning');
+        return;
+      }
+
+      uploadToYoutubeBtn.disabled = true;
+      uploadProgress.classList.remove('hidden');
+
+      // Simulate upload progress
+      let progress = 0;
+      const interval = setInterval(() => {
+        progress += Math.random() * 30;
+        if (progress > 100) progress = 100;
+        
+        progressBar.style.width = progress + '%';
+        uploadStatus.textContent = Math.floor(progress) + '%';
+
+        if (progress === 100) {
+          clearInterval(interval);
+          setTimeout(() => {
+            uploadProgress.classList.add('hidden');
+            uploadToYoutubeBtn.disabled = false;
+            showToast('Video uploaded successfully! Processing by YouTube...', 'success');
+            showYoutubeLink();
+          }, 1000);
+        }
+      }, 500);
+    });
+
+    function showYoutubeLink() {
+      const videoLink = `https://www.youtube.com/watch?v=VIDEO_ID_${Date.now().toString().slice(-8)}`;
+      showToast('View your video: ' + videoLink);
+    }
+
+    // Update auto tags when tags are generated
+    function updateAutoTags() {
+      youtubeAutoTags.innerHTML = '';
+      const tagsToShow = generatedTags.slice(0, 5);
+      tagsToShow.forEach((tag, index) => {
+        const pill = document.createElement('span');
+        pill.className = 'tag-pill inline-block px-2 py-1 rounded text-xs';
+        pill.style.background = 'rgba(239, 68, 68, 0.2)';
+        pill.style.color = '#fca5a5';
+        pill.style.border = '1px solid rgba(239, 68, 68, 0.3)';
+        pill.textContent = tag;
+        youtubeAutoTags.appendChild(pill);
+      });
+    }
+
+    // Video Upload Handling
+    dropZone.addEventListener('click', () => videoInput.click());
+    
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('border-indigo-400', 'bg-indigo-500/10');
+    });
+    
+    dropZone.addEventListener('dragleave', () => {
+      dropZone.classList.remove('border-indigo-400', 'bg-indigo-500/10');
+    });
+    
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('border-indigo-400', 'bg-indigo-500/10');
+      const file = e.dataTransfer.files[0];
+      if (file && file.type.startsWith('video/')) {
+        handleVideoFile(file);
+      } else {
+        showToast('Please upload a valid video file', 'warning');
+      }
+    });
+    
+    videoInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        handleVideoFile(file);
+      }
+    });
+
+    function handleVideoFile(file) {
+      videoFile = file;
+      const url = URL.createObjectURL(file);
+      videoPlayer.src = url;
+      
+      videoPlayer.onloadedmetadata = () => {
+        videoDuration = videoPlayer.duration;
+        trimStart = 0;
+        trimEnd = videoDuration;
+        
+        // Update UI
+        dropZone.classList.add('hidden');
+        videoPreview.classList.remove('hidden');
+        trimSection.classList.remove('hidden');
+        exportSection.classList.remove('hidden');
+        
+        // Show AI sections
+        captionEmpty.classList.add('hidden');
+        captionContent.classList.remove('hidden');
+        tagsEmpty.classList.add('hidden');
+        tagsContent.classList.remove('hidden');
+        
+        // Update info
+        videoInfo.textContent = `${file.name} • ${formatFileSize(file.size)} • ${formatTime(videoDuration)}`;
+        
+        // Update trim controls
+        updateTrimDisplay();
+        
+        showToast('Video loaded successfully!');
+      };
+    }
+
+    changeVideoBtn.addEventListener('click', () => {
+      videoPlayer.src = '';
+      videoFile = null;
+      dropZone.classList.remove('hidden');
+      videoPreview.classList.add('hidden');
+      trimSection.classList.add('hidden');
+      exportSection.classList.add('hidden');
+      captionEmpty.classList.remove('hidden');
+      captionContent.classList.add('hidden');
+      captionsResult.classList.add('hidden');
+      tagsEmpty.classList.remove('hidden');
+      tagsContent.classList.add('hidden');
+      tagsResult.classList.add('hidden');
+      videoInput.value = '';
+    });
+
+    // Trim Controls
+    function updateTrimDisplay() {
+      const startPercent = (trimStart / videoDuration) * 100;
+      const endPercent = (trimEnd / videoDuration) * 100;
+      
+      trimOverlay.style.left = startPercent + '%';
+      trimOverlay.style.width = (endPercent - startPercent) + '%';
+      
+      startTimeInput.value = formatTime(trimStart);
+      endTimeInput.value = formatTime(trimEnd);
+      
+      const duration = trimEnd - trimStart;
+      trimDuration.textContent = `Duration: ${formatTime(duration)}`;
+    }
+
+    // Handle dragging
+    let isDragging = false;
+    let dragTarget = null;
+
+    function handleDragStart(e, target) {
+      isDragging = true;
+      dragTarget = target;
+      e.preventDefault();
+    }
+
+    startHandle.addEventListener('mousedown', (e) => handleDragStart(e, 'start'));
+    endHandle.addEventListener('mousedown', (e) => handleDragStart(e, 'end'));
+    startHandle.addEventListener('touchstart', (e) => handleDragStart(e, 'start'));
+    endHandle.addEventListener('touchstart', (e) => handleDragStart(e, 'end'));
+
+    document.addEventListener('mousemove', handleDrag);
+    document.addEventListener('touchmove', handleDrag);
+
+    function handleDrag(e) {
+      if (!isDragging || !dragTarget) return;
+      
+      const timeline = trimOverlay.parentElement;
+      const rect = timeline.getBoundingClientRect();
+      const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+      const x = Math.max(0, Math.min(clientX - rect.left, rect.width));
+      const percent = x / rect.width;
+      const time = percent * videoDuration;
+      
+      if (dragTarget === 'start') {
+        trimStart = Math.min(time, trimEnd - 1);
+      } else {
+        trimEnd = Math.max(time, trimStart + 1);
+      }
+      
+      updateTrimDisplay();
+    }
+
+    document.addEventListener('mouseup', () => {
+      isDragging = false;
+      dragTarget = null;
+    });
+    document.addEventListener('touchend', () => {
+      isDragging = false;
+      dragTarget = null;
+    });
+
+    startTimeInput.addEventListener('change', () => {
+      trimStart = Math.min(parseTime(startTimeInput.value), trimEnd - 1);
+      updateTrimDisplay();
+    });
+
+    endTimeInput.addEventListener('change', () => {
+      trimEnd = Math.max(parseTime(endTimeInput.value), trimStart + 1);
+      trimEnd = Math.min(trimEnd, videoDuration);
+      updateTrimDisplay();
+    });
+
+    // AI Caption Generation
+    generateCaptionsBtn.addEventListener('click', () => {
+      captionsLoading.classList.remove('hidden');
+      captionsResult.classList.add('hidden');
+      generateCaptionsBtn
